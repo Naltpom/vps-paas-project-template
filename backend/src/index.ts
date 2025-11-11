@@ -13,6 +13,8 @@ import dotenv from 'dotenv';
 import { env } from './config/environment';
 import { healthRouter } from './routes/health';
 import { apiRouter } from './routes/api';
+import { authRouter } from './routes/auth';
+import { usersRouter } from './routes/users';
 import { errorHandler } from './middleware/error-handler';
 import { logger } from './middleware/logger';
 
@@ -46,6 +48,8 @@ app.use(logger);
 // Routes
 // ============================================
 app.use('/health', healthRouter);
+app.use('/api/auth', authRouter);
+app.use('/api', usersRouter);
 app.use('/api', apiRouter);
 
 // Root endpoint

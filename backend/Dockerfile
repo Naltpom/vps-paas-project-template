@@ -17,6 +17,12 @@ COPY package*.json ./
 # Install all dependencies (including devDependencies for build)
 RUN npm ci
 
+# Copy Prisma schema
+COPY prisma ./prisma
+
+# Generate Prisma client
+RUN npx prisma generate
+
 # Copy source code
 COPY tsconfig.json ./
 COPY src ./src
@@ -42,6 +48,7 @@ RUN addgroup -g 1001 -S nodejs && \
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 
 # Switch to non-root user
 USER nodejs
