@@ -3,26 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ProgressBar from './ProgressBar';
 import StepList, { Step } from './StepList';
 import Confetti from './Confetti';
-
-interface BuildingPageProps {
-  projectName: string;
-  description: string;
-  createdAt: string;
-  slug: string;
-  executionId: string;
-  mcpApiUrl: string;
-}
+import { TerminalViewer } from './TerminalViewer';
+import { PROJECT_CONFIG, isConfigured } from '../config/project';
 
 type PageStatus = 'building' | 'finalizing' | 'launching' | 'live' | 'error' | 'offline';
+type ViewMode = 'steps' | 'logs';
 
-export default function BuildingPage({
-  projectName,
-  description,
-  createdAt,
-  slug,
-  executionId,
-  mcpApiUrl,
-}: BuildingPageProps) {
+export function BuildingPage() {
+  const { name: projectName, description, prompt, createdAt, slug, executionId, mcpApiUrl } = PROJECT_CONFIG;
   const [progress, setProgress] = useState(0);
   const [steps, setSteps] = useState<Step[]>([]);
   const [currentStep, setCurrentStep] = useState('');
@@ -30,6 +18,7 @@ export default function BuildingPage({
   const [status, setStatus] = useState<PageStatus>('building');
   const [showConfetti, setShowConfetti] = useState(false);
   const [healthCheckFailed, setHealthCheckFailed] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('steps');
 
   const projectUrl = `https://${slug}.vps.naltpom.fr`;
 
@@ -198,9 +187,16 @@ export default function BuildingPage({
             {description}
           </p>
 
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+          {prompt && isConfigured(prompt) && (
+            <div className="mt-4 max-w-2xl mx-auto bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+              <p className="text-sm text-gray-400 mb-2">📝 Prompt utilisateur :</p>
+              <p className="text-sm text-gray-300 whitespace-pre-wrap text-left">{prompt}</p>
+            </div>
+          )}
+
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-400 mt-4">
             <span>🕐</span>
-            <span>Créé le {new Date(createdAt).toLocaleString('fr-FR')}</span>
+            <span>Créé le {isConfigured(createdAt) ? new Date(createdAt).toLocaleString('fr-FR') : 'En cours...'}</span>
           </div>
         </div>
 
@@ -224,9 +220,42 @@ export default function BuildingPage({
           <ProgressBar percentage={progress} />
         )}
 
+        {/* Toggle Steps / Logs */}
+        {status === 'building' && isConfigured(executionId) && (
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={() => setViewMode('steps')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                viewMode === 'steps'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              }`}
+            >
+              📊 Étapes
+            </button>
+            <button
+              onClick={() => setViewMode('logs')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                viewMode === 'logs'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              }`}
+            >
+              📜 Logs
+            </button>
+          </div>
+        )}
+
         {/* Steps list */}
-        {steps.length > 0 && status === 'building' && (
+        {viewMode === 'steps' && steps.length > 0 && status === 'building' && (
           <StepList steps={steps} />
+        )}
+
+        {/* Terminal Viewer (Logs) */}
+        {viewMode === 'logs' && status === 'building' && isConfigured(executionId) && (
+          <div className="w-full max-w-4xl mx-auto">
+            <TerminalViewer />
+          </div>
         )}
 
         {/* Call to action buttons */}
